@@ -1,7 +1,7 @@
 {
-  "name": "youth-policy-figma",
+  "name": "youth-issue",
   "version": "1.0.0",
-  "description": "청년있슈 - 청년 정책 통합 플랫폼 (Figma 프로토타입)",
+  "description": "청년있슈 - 청년을 위한 6가지 필수 정책 교육 플랫폼",
   "productName": "청년있슈",
   "author": "Developer",
   "private": true,

@@ -215,6 +215,7 @@ import FigmaHeader from '../components/figma/FigmaHeader.vue'
 import FigmaFooter from '../components/figma/FigmaFooter.vue'
 import { useAuth } from '../composables/useAuth'
 import { useLearning } from '../composables/useLearning'
+import { useMeta, categoryMeta } from '../composables/useMeta'
 import { supabase } from '../lib/supabase'
 
 const route = useRoute()
@@ -464,6 +465,7 @@ const loadCategoryData = async () => {
 
 onMounted(() => {
   loadCategoryData()
+  updateMetaTags()
 })
 
 // 영상/퀴즈에서 돌아왔을 때 데이터 재로드
@@ -472,9 +474,24 @@ onActivated(() => {
   loadCategoryData()
 })
 
+// 카테고리별 메타 태그 업데이트 함수
+const updateMetaTags = () => {
+  const categorySlug = category.value as string
+  const meta = categoryMeta[categorySlug]
+
+  if (meta) {
+    // 카테고리별 메타 정보 사용
+    useMeta({
+      ...meta,
+      canonicalUrl: `https://youth-policy.vercel.app/category/${categorySlug}`
+    })
+  }
+}
+
 // 카테고리 변경 감지
 watch(category, () => {
   loadCategoryData()
+  updateMetaTags()
 })
 
 const handleBack = () => {

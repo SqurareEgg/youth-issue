@@ -107,12 +107,34 @@ const newsSlides = [
   .hero-grid {
     grid-template-columns: 1.2fr 1fr;
     gap: 3rem;
+    align-items: stretch;
   }
 }
 
 @media (min-width: 1024px) {
   .hero-grid {
     gap: 4rem;
+  }
+}
+
+.order-first {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  .order-first {
+    justify-content: center;
+  }
+}
+
+.order-last {
+  display: flex;
+}
+
+@media (min-width: 768px) {
+  .order-last {
+    align-items: center;
   }
 }
 
@@ -229,6 +251,7 @@ h1 {
   border-radius: 1.5rem;
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
   height: 280px;
+  width: 100%;
 }
 
 @media (min-width: 640px) {
@@ -239,7 +262,8 @@ h1 {
 
 @media (min-width: 768px) {
   .hero-carousel {
-    height: 400px;
+    height: 100%;
+    min-height: 400px;
   }
 }
 </style>
