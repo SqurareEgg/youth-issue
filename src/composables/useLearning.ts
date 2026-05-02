@@ -333,7 +333,7 @@ export function useLearning() {
     try {
       const { data, error: fetchError } = await supabase
         .from('user_quiz_results')
-        .select('quiz_id, score, passed, completed_at, quizzes!inner(category_id)')
+        .select('quiz_id, score, completed_at, quizzes!inner(category_id)')
         .eq('user_id', userId)
         .eq('quizzes.category_id', categoryId)
         .order('completed_at', { ascending: false })
@@ -348,7 +348,7 @@ export function useLearning() {
           filtered.push({
             quiz_id: result.quiz_id,
             score: result.score,
-            passed: result.passed,
+            passed: result.score >= 60,
             completed: true
           })
           return filtered
