@@ -151,10 +151,15 @@ import { useRoute, useRouter } from 'vue-router'
 import { useQuasar } from 'quasar'
 import FigmaHeader from '../components/figma/FigmaHeader.vue'
 import FigmaFooter from '../components/figma/FigmaFooter.vue'
+import { useAuth } from '../composables/useAuth'
+import { useBookmarks } from '../composables/useBookmarks'
 
 const route = useRoute()
 const router = useRouter()
 const $q = useQuasar()
+
+const { user } = useAuth()
+const { addBookmark, removeBookmark, isBookmarked, fetchUserBookmarks } = useBookmarks()
 
 const category = computed(() => route.params.category as string)
 const policyId = computed(() => route.params.policyId as string)
@@ -592,17 +597,63 @@ const navigateToPolicy = (id: number) => {
   })
 }
 
-const toggleBookmark = (detailId: number) => {
+const toggleBookmark = async (detailId: number) => {
   const detail = currentPolicy.value.details?.find((d: any) => d.id === detailId)
-  if (detail) {
-    detail.saved = !detail.saved
+  if (!detail) return
+
+  const policyIdNum = parseInt(policyId.value)
+  const currentlySaved = detail.saved
+
+  try {
+    if (currentlySaved) {
+      // 북마크 제거
+      await removeBookmark(category.value, policyIdNum, detailId, user.value?.id)
+      detail.saved = false
+      $q.notify({
+        type: 'info',
+        message: '관심 정책에서 제거되었습니다.',
+        position: 'top'
+      })
+    } else {
+      // 북마크 추가
+      await addBookmark(category.value, policyIdNum, detailId, user.value?.id)
+      detail.saved = true
+      $q.notify({
+        type: 'positive',
+        message: '관심 정책으로 저장되었습니다.',
+        position: 'top'
+      })
+    }
+  } catch (err: any) {
+    console.error('북마크 토글 에러:', err)
     $q.notify({
-      type: detail.saved ? 'positive' : 'info',
-      message: detail.saved ? '관심 정책으로 저장되었습니다.' : '관심 정책에서 제거되었습니다.',
+      type: 'negative',
+      message: '북마크 저장 중 오류가 발생했습니다.',
       position: 'top'
     })
   }
 }
+
+// 북마크 상태 초기화
+const initializeBookmarks = async () => {
+  // 로그인한 사용자는 DB에서 북마크 동기화
+  if (user.value) {
+    await fetchUserBookmarks(user.value.id)
+  }
+
+  // 현재 정책의 상세 항목들의 북마크 상태 설정
+  if (currentPolicy.value.details) {
+    const policyIdNum = parseInt(policyId.value)
+    currentPolicy.value.details.forEach((detail: any) => {
+      detail.saved = isBookmarked(category.value, policyIdNum, detail.id)
+    })
+  }
+}
+
+// 페이지 로드 시 북마크 초기화
+onMounted(() => {
+  initializeBookmarks()
+})
 </script>
 
 <style scoped>
