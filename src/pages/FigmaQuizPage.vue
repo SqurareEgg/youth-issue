@@ -100,9 +100,10 @@
                 @click="selectAnswer(index)"
                 :style="{
                   padding: '1rem',
-                  cursor: 'pointer',
-                  border: userAnswers[currentQuestion.id] === index ? '2px solid #F97316' : '1px solid #E5E7EB',
-                  backgroundColor: userAnswers[currentQuestion.id] === index ? '#FFF7ED' : 'white'
+                  cursor: showExplanation ? 'default' : 'pointer',
+                  border: getBorderStyle(index),
+                  backgroundColor: getBackgroundStyle(index),
+                  pointerEvents: showExplanation ? 'none' : 'auto'
                 }"
               >
                 <div style="display: flex; align-items: center; gap: 1rem;">
@@ -115,16 +116,39 @@
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontWeight: '600',
-                      backgroundColor: userAnswers[currentQuestion.id] === index ? '#F97316' : '#F3F4F6',
-                      color: userAnswers[currentQuestion.id] === index ? 'white' : '#4B5563'
+                      backgroundColor: getNumberBackgroundStyle(index),
+                      color: getNumberColorStyle(index)
                     }"
                   >
                     {{ index + 1 }}
                   </div>
                   <span style="flex: 1; font-size: 1rem;">{{ option }}</span>
+                  <q-icon
+                    v-if="showExplanation && index === currentQuestion.correct_answer"
+                    name="check_circle"
+                    size="24px"
+                    color="green"
+                  />
+                  <q-icon
+                    v-if="showExplanation && index === userAnswers[currentQuestion.id] && index !== currentQuestion.correct_answer"
+                    name="cancel"
+                    size="24px"
+                    color="red"
+                  />
                 </div>
               </q-card>
             </div>
+
+            <!-- 해설 표시 -->
+            <q-card v-if="showExplanation && currentQuestion.explanation" style="padding: 1.5rem; margin-top: 1.5rem; background-color: #F0F9FF; border-left: 4px solid #3B82F6;">
+              <div style="display: flex; gap: 0.75rem;">
+                <q-icon name="lightbulb" size="24px" color="blue" />
+                <div style="flex: 1;">
+                  <h4 style="font-size: 1rem; font-weight: 600; color: #1E40AF; margin-bottom: 0.5rem;">해설</h4>
+                  <p style="font-size: 0.9375rem; color: #1E3A8A; line-height: 1.6; margin: 0;">{{ currentQuestion.explanation }}</p>
+                </div>
+              </div>
+            </q-card>
           </q-card>
 
           <div style="display: flex; gap: 1rem;">
@@ -214,6 +238,7 @@ const submitting = ref(false)
 
 const currentQuestionIndex = ref(0)
 const userAnswers = ref<Record<number, number>>({})
+const showExplanation = ref(false) // 해설 표시 여부
 
 const showResult = ref(false)
 const result = ref<any>(null)
@@ -642,13 +667,86 @@ const loadQuiz = () => {
 
 // 정답 선택 (0-based index)
 const selectAnswer = (answerIndex: number) => {
+  if (showExplanation.value) return // 이미 답했으면 무시
+
   userAnswers.value[currentQuestion.value.id] = answerIndex
+  showExplanation.value = true // 해설 표시
+}
+
+// 스타일 헬퍼 함수들
+const getBorderStyle = (index: number) => {
+  if (!showExplanation.value) {
+    return userAnswers.value[currentQuestion.value.id] === index ? '2px solid #F97316' : '1px solid #E5E7EB'
+  }
+
+  // 정답
+  if (index === currentQuestion.value.correct_answer) {
+    return '2px solid #10B981'
+  }
+
+  // 선택한 오답
+  if (index === userAnswers.value[currentQuestion.value.id] && index !== currentQuestion.value.correct_answer) {
+    return '2px solid #EF4444'
+  }
+
+  return '1px solid #E5E7EB'
+}
+
+const getBackgroundStyle = (index: number) => {
+  if (!showExplanation.value) {
+    return userAnswers.value[currentQuestion.value.id] === index ? '#FFF7ED' : 'white'
+  }
+
+  // 정답
+  if (index === currentQuestion.value.correct_answer) {
+    return '#ECFDF5'
+  }
+
+  // 선택한 오답
+  if (index === userAnswers.value[currentQuestion.value.id] && index !== currentQuestion.value.correct_answer) {
+    return '#FEE2E2'
+  }
+
+  return 'white'
+}
+
+const getNumberBackgroundStyle = (index: number) => {
+  if (!showExplanation.value) {
+    return userAnswers.value[currentQuestion.value.id] === index ? '#F97316' : '#F3F4F6'
+  }
+
+  // 정답
+  if (index === currentQuestion.value.correct_answer) {
+    return '#10B981'
+  }
+
+  // 선택한 오답
+  if (index === userAnswers.value[currentQuestion.value.id] && index !== currentQuestion.value.correct_answer) {
+    return '#EF4444'
+  }
+
+  return '#F3F4F6'
+}
+
+const getNumberColorStyle = (index: number) => {
+  if (!showExplanation.value) {
+    return userAnswers.value[currentQuestion.value.id] === index ? 'white' : '#4B5563'
+  }
+
+  // 정답 또는 선택한 오답
+  if (index === currentQuestion.value.correct_answer || index === userAnswers.value[currentQuestion.value.id]) {
+    return 'white'
+  }
+
+  return '#4B5563'
 }
 
 // 다음 문제
 const nextQuestion = () => {
   if (currentQuestionIndex.value < questions.value.length - 1) {
     currentQuestionIndex.value++
+    // 다음 문제로 넘어갈 때 해설 표시 초기화 (이미 답한 문제면 다시 표시)
+    showExplanation.value = userAnswers.value[questions.value[currentQuestionIndex.value].id] !== undefined
   }
 }
 
@@ -656,6 +754,8 @@ const nextQuestion = () => {
 const previousQuestion = () => {
   if (currentQuestionIndex.value > 0) {
     currentQuestionIndex.value--
+    // 이전 문제로 돌아갈 때 해설 표시 초기화 (이미 답한 문제면 다시 표시)
+    showExplanation.value = userAnswers.value[questions.value[currentQuestionIndex.value].id] !== undefined
   }
 }
 
@@ -736,6 +836,7 @@ const resetQuiz = () => {
   userAnswers.value = {}
   showResult.value = false
   result.value = null
+  showExplanation.value = false
 }
 
 // 뒤로 가기
