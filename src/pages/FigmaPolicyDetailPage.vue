@@ -114,12 +114,12 @@
                     </div>
                     <button
                       class="bookmark-button"
-                      :class="{ 'saved': detail.saved }"
+                      :class="{ 'saved': isDetailBookmarked(detail.id) }"
                       @click="toggleBookmark(detail.id)"
-                      :aria-label="detail.saved ? '관심 정책에서 제거' : '관심 정책으로 저장'"
-                      :title="detail.saved ? '관심 정책에서 제거' : '관심 정책으로 저장하고 알림 받기'"
+                      :aria-label="isDetailBookmarked(detail.id) ? '관심 정책에서 제거' : '관심 정책으로 저장'"
+                      :title="isDetailBookmarked(detail.id) ? '관심 정책에서 제거' : '관심 정책으로 저장하고 알림 받기'"
                     >
-                      <q-icon :name="detail.saved ? 'bookmark' : 'bookmark_border'" size="20px" />
+                      <q-icon :name="isDetailBookmarked(detail.id) ? 'bookmark' : 'bookmark_border'" size="20px" />
                     </button>
                   </div>
                 </div>
@@ -164,6 +164,9 @@ const { addBookmark, removeBookmark, isBookmarked, fetchUserBookmarks } = useBoo
 const category = computed(() => route.params.category as string)
 const policyId = computed(() => route.params.policyId as string)
 const categoryData = ref<any>(null)
+
+// 북마크 상태 관리 (detailId를 키로 사용)
+const bookmarkedDetails = ref<Set<number>>(new Set())
 
 // 카테고리별 세부 정책 리스트
 const subPolicies = computed(() => {
@@ -597,18 +600,20 @@ const navigateToPolicy = (id: number) => {
   })
 }
 
-const toggleBookmark = async (detailId: number) => {
-  const detail = currentPolicy.value.details?.find((d: any) => d.id === detailId)
-  if (!detail) return
+// 북마크 상태 확인
+const isDetailBookmarked = (detailId: number): boolean => {
+  return bookmarkedDetails.value.has(detailId)
+}
 
+const toggleBookmark = async (detailId: number) => {
   const policyIdNum = parseInt(policyId.value)
-  const currentlySaved = detail.saved
+  const currentlySaved = bookmarkedDetails.value.has(detailId)
 
   try {
     if (currentlySaved) {
       // 북마크 제거
       await removeBookmark(category.value, policyIdNum, detailId, user.value?.id)
-      detail.saved = false
+      bookmarkedDetails.value.delete(detailId)
       $q.notify({
         type: 'info',
         message: '관심 정책에서 제거되었습니다.',
@@ -617,7 +622,7 @@ const toggleBookmark = async (detailId: number) => {
     } else {
       // 북마크 추가
       await addBookmark(category.value, policyIdNum, detailId, user.value?.id)
-      detail.saved = true
+      bookmarkedDetails.value.add(detailId)
       $q.notify({
         type: 'positive',
         message: '관심 정책으로 저장되었습니다.',
@@ -644,8 +649,11 @@ const initializeBookmarks = async () => {
   // 현재 정책의 상세 항목들의 북마크 상태 설정
   if (currentPolicy.value.details) {
     const policyIdNum = parseInt(policyId.value)
+    bookmarkedDetails.value.clear()
     currentPolicy.value.details.forEach((detail: any) => {
-      detail.saved = isBookmarked(category.value, policyIdNum, detail.id)
+      if (isBookmarked(category.value, policyIdNum, detail.id)) {
+        bookmarkedDetails.value.add(detail.id)
+      }
     })
   }
 }
