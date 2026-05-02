@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS public.quizzes (
 
 ALTER TABLE public.quizzes ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Quizzes are viewable by everyone" ON public.quizzes;
 CREATE POLICY "Quizzes are viewable by everyone"
   ON public.quizzes FOR SELECT
   USING (true);
@@ -46,10 +47,12 @@ CREATE TABLE IF NOT EXISTS public.user_quiz_results (
 
 ALTER TABLE public.user_quiz_results ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own quiz results" ON public.user_quiz_results;
 CREATE POLICY "Users can view own quiz results"
   ON public.user_quiz_results FOR SELECT
   USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can insert own quiz results" ON public.user_quiz_results;
 CREATE POLICY "Users can insert own quiz results"
   ON public.user_quiz_results FOR INSERT
   WITH CHECK (auth.uid() = user_id);
