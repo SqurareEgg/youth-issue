@@ -186,15 +186,26 @@ import { useQuasar } from 'quasar'
 import FigmaHeader from '../components/figma/FigmaHeader.vue'
 import FigmaFooter from '../components/figma/FigmaFooter.vue'
 import { useAuth } from '../composables/useAuth'
+import { useLearning } from '../composables/useLearning'
 
 const route = useRoute()
 const router = useRouter()
 const $q = useQuasar()
 
 const { user } = useAuth()
+const { submitQuiz } = useLearning()
 
-const quizId = computed(() => parseInt(route.params.quizId as string))
+// 카테고리 슬러그 → 퀴즈 ID 매핑
+const categoryToQuizId: Record<string, number> = {
+  'job': 1,
+  'housing': 2,
+  'education': 3,
+  'finance-welfare-culture': 4,
+  'participation': 5
+}
+
 const categorySlug = computed(() => route.params.category as string)
+const quizId = computed(() => categoryToQuizId[categorySlug.value] || 1)
 
 const quiz = ref<any>(null)
 const questions = ref<any[]>([])
@@ -648,12 +659,21 @@ const previousQuestion = () => {
   }
 }
 
-// 퀴즈 제출 (로컬 채점)
-const submitQuizAnswers = () => {
+// 퀴즈 제출 (로컬 채점 + DB 저장)
+const submitQuizAnswers = async () => {
   if (!isAllAnswered.value) {
     $q.notify({
       type: 'warning',
       message: '모든 문제에 답해주세요.',
+      position: 'top'
+    })
+    return
+  }
+
+  if (!user.value) {
+    $q.notify({
+      type: 'warning',
+      message: '로그인이 필요합니다.',
       position: 'top'
     })
     return
@@ -674,6 +694,17 @@ const submitQuizAnswers = () => {
     // 점수 계산 (100점 만점)
     const totalQuestions = questions.value.length
     const score = Math.round((correctCount / totalQuestions) * 100)
+
+    // DB에 결과 저장
+    const submitResult = await submitQuiz(
+      user.value.id,
+      quizId.value,
+      userAnswers.value
+    )
+
+    if (!submitResult.success) {
+      throw new Error(submitResult.error || '퀴즈 결과 저장 실패')
+    }
 
     result.value = {
       score: score,
