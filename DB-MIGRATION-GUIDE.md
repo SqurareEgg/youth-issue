@@ -31,6 +31,7 @@
 | `user_video_progress` | 영상 시청 기록 |
 | **`quizzes`** | **퀴즈 메타데이터 (최소)** |
 | **`user_quiz_results`** | **사용자 퀴즈 결과** |
+| **`user_policy_bookmarks`** | **정책 북마크 (하드코딩 정책용)** |
 | `page_views` | 페이지 통계 |
 
 #### ✅ 유지되는 뷰
@@ -66,7 +67,19 @@
 3. `user_learning_progress` 뷰 생성
 4. 퀴즈 메타데이터 시드 데이터 삽입 (5개 카테고리)
 
-### Step 2: 불필요한 테이블 정리
+### Step 2: 정책 북마크 테이블 생성
+```bash
+# Supabase Dashboard → SQL Editor에서 실행
+```
+
+파일: `create-policy-bookmarks-table.sql`
+
+이 스크립트는:
+1. `user_policy_bookmarks` 테이블 생성
+2. RLS 정책 설정
+3. 인덱스 생성
+
+### Step 3: 불필요한 테이블 정리
 ```bash
 # Supabase Dashboard → SQL Editor에서 실행
 ```
@@ -109,7 +122,7 @@ ORDER BY table_type, table_name;
 ```
 
 예상 결과:
-- BASE TABLE: 7개 (categories, page_views, profiles, quizzes, user_quiz_results, user_video_progress, videos)
+- BASE TABLE: 8개 (categories, page_views, profiles, quizzes, user_policy_bookmarks, user_quiz_results, user_video_progress, videos)
 - VIEW: 4개 (category_analytics, category_session_visits, category_user_visits, user_learning_progress)
 
 ## ⚠️ 주의사항
@@ -157,9 +170,11 @@ ORDER BY table_type, table_name;
 ## ✅ 완료 체크리스트
 
 - [ ] `setup-minimal-quiz-structure.sql` 실행
+- [ ] `create-policy-bookmarks-table.sql` 실행
 - [ ] `cleanup-unused-tables-final.sql` 실행
 - [ ] 퀴즈 제출 테스트
+- [ ] 북마크 기능 테스트
 - [ ] 학습 진도율 확인
-- [ ] 최종 테이블 목록 확인 (7개 테이블 + 4개 뷰)
+- [ ] 최종 테이블 목록 확인 (8개 테이블 + 4개 뷰)
 - [ ] 코드 커밋 및 푸시
 - [ ] 프로덕션 배포

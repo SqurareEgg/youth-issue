@@ -19,6 +19,7 @@
 -- 유지:
 -- ✅ quizzes - 퀴즈 메타데이터 (user_quiz_results 외래 키 참조용)
 -- ✅ user_quiz_results - 사용자 퀴즈 결과
+-- ✅ user_policy_bookmarks - 정책 북마크 (하드코딩 정책용)
 -- ✅ user_learning_progress - 학습 진도율 뷰
 -- ✅ videos, user_video_progress - 영상 학습 관련
 -- ✅ categories, profiles, page_views - 기본 데이터
