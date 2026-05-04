@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">청년있슈</string>
+    <string name="title_activity_main">청년있슈</string>
+    <string name="package_name">com.youthissue.app</string>
+    <string name="custom_url_scheme">com.youthissue.app</string>
+</resources>

@@ -165,8 +165,8 @@ const category = computed(() => route.params.category as string)
 const policyId = computed(() => route.params.policyId as string)
 const categoryData = ref<any>(null)
 
-// 북마크 상태 관리 (detailId를 키로 사용)
-const bookmarkedDetails = ref<Set<number>>(new Set())
+// 북마크 상태 관리 (bookmark_key를 사용하여 정책별로 독립적으로 관리)
+const bookmarkedDetails = ref<Set<string>>(new Set())
 
 // 카테고리별 세부 정책 리스트
 const subPolicies = computed(() => {
@@ -600,20 +600,50 @@ const navigateToPolicy = (id: number) => {
   })
 }
 
+// 북마크 키 생성
+const createBookmarkKey = (policyIdNum: number, detailId: number): string => {
+  return `${category.value}-${policyIdNum}-${detailId}`
+}
+
 // 북마크 상태 확인
 const isDetailBookmarked = (detailId: number): boolean => {
-  return bookmarkedDetails.value.has(detailId)
+  const policyIdNum = parseInt(policyId.value)
+  const key = createBookmarkKey(policyIdNum, detailId)
+  return bookmarkedDetails.value.has(key)
 }
 
 const toggleBookmark = async (detailId: number) => {
+  // 로그인 확인
+  if (!user.value) {
+    $q.notify({
+      type: 'warning',
+      message: '로그인이 필요한 기능입니다.',
+      position: 'top',
+      actions: [
+        {
+          label: '로그인',
+          color: 'white',
+          handler: () => {
+            router.push('/login')
+          }
+        }
+      ]
+    })
+    return
+  }
+
   const policyIdNum = parseInt(policyId.value)
-  const currentlySaved = bookmarkedDetails.value.has(detailId)
+  const key = createBookmarkKey(policyIdNum, detailId)
+  const currentlySaved = bookmarkedDetails.value.has(key)
 
   try {
     if (currentlySaved) {
       // 북마크 제거
-      await removeBookmark(category.value, policyIdNum, detailId, user.value?.id)
-      bookmarkedDetails.value.delete(detailId)
+      const result = await removeBookmark(category.value, policyIdNum, detailId, user.value.id)
+      if (result && !result.success) {
+        throw new Error(result.error || '북마크 제거 실패')
+      }
+      bookmarkedDetails.value.delete(key)
       $q.notify({
         type: 'info',
         message: '관심 정책에서 제거되었습니다.',
@@ -621,8 +651,11 @@ const toggleBookmark = async (detailId: number) => {
       })
     } else {
       // 북마크 추가
-      await addBookmark(category.value, policyIdNum, detailId, user.value?.id)
-      bookmarkedDetails.value.add(detailId)
+      const result = await addBookmark(category.value, policyIdNum, detailId, user.value.id)
+      if (result && !result.success) {
+        throw new Error(result.error || '북마크 추가 실패')
+      }
+      bookmarkedDetails.value.add(key)
       $q.notify({
         type: 'positive',
         message: '관심 정책으로 저장되었습니다.',
@@ -633,7 +666,7 @@ const toggleBookmark = async (detailId: number) => {
     console.error('북마크 토글 에러:', err)
     $q.notify({
       type: 'negative',
-      message: '북마크 저장 중 오류가 발생했습니다.',
+      message: err.message || '북마크 저장 중 오류가 발생했습니다.',
       position: 'top'
     })
   }
@@ -652,7 +685,8 @@ const initializeBookmarks = async () => {
     bookmarkedDetails.value.clear()
     currentPolicy.value.details.forEach((detail: any) => {
       if (isBookmarked(category.value, policyIdNum, detail.id)) {
-        bookmarkedDetails.value.add(detail.id)
+        const key = createBookmarkKey(policyIdNum, detail.id)
+        bookmarkedDetails.value.add(key)
       }
     })
   }

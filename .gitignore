@@ -47,3 +47,15 @@ yarn-error.log*
 .vercel
 .env*.local
 *.apk
+
+# Quasar temporary compiled files
+*.temporary.compiled.*.mjs
+
+# Temporary files
+nul
+
+# Database backup and migration files (keep versioned ones only)
+*-backup.sql
+*-migration.sql
+current-db-schema-backup.sql
+supabase-schema-backup-*.sql

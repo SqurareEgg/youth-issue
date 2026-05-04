@@ -38,36 +38,38 @@ export function useBookmarks() {
   ) => {
     const key = createBookmarkKey(category, policyId, detailId)
 
-    // 로컬스토리지에 저장
-    const bookmarks = getLocalBookmarks()
-    bookmarks.add(key)
-    saveLocalBookmarks(bookmarks)
-
-    // 로그인한 사용자는 DB에도 저장
-    if (userId) {
-      try {
-        const { error: insertError } = await supabase
-          .from('user_policy_bookmarks')
-          .insert({
-            user_id: userId,
-            bookmark_key: key,
-            category: category,
-            policy_id: policyId,
-            detail_id: detailId
-          })
-
-        if (insertError && insertError.code !== '23505') { // 중복 에러 무시
-          throw insertError
-        }
-
-        return { success: true }
-      } catch (err: any) {
-        console.error('DB 북마크 저장 에러:', err.message)
-        return { success: false, error: err.message }
-      }
+    // 로그인한 사용자만 북마크 가능 (로컬스토리지 사용 안 함)
+    if (!userId) {
+      return { success: false, error: '로그인이 필요합니다.' }
     }
 
-    return { success: true }
+    // DB에 저장
+    try {
+      const { error: insertError } = await supabase
+        .from('user_policy_bookmarks')
+        .insert({
+          user_id: userId,
+          bookmark_key: key,
+          category: category,
+          policy_id: policyId,
+          detail_id: detailId
+        })
+
+      if (insertError && insertError.code !== '23505') { // 중복 에러 무시
+        console.error('DB 북마크 저장 에러:', insertError)
+        throw insertError
+      }
+
+      // 로컬스토리지에도 저장 (빠른 UI 반응을 위해)
+      const bookmarks = getLocalBookmarks()
+      bookmarks.add(key)
+      saveLocalBookmarks(bookmarks)
+
+      return { success: true }
+    } catch (err: any) {
+      console.error('DB 북마크 저장 에러:', err.message || err)
+      return { success: false, error: err.message || '북마크 저장에 실패했습니다.' }
+    }
   }
 
   // 북마크 제거
@@ -79,30 +81,34 @@ export function useBookmarks() {
   ) => {
     const key = createBookmarkKey(category, policyId, detailId)
 
-    // 로컬스토리지에서 제거
-    const bookmarks = getLocalBookmarks()
-    bookmarks.delete(key)
-    saveLocalBookmarks(bookmarks)
-
-    // 로그인한 사용자는 DB에서도 제거
-    if (userId) {
-      try {
-        const { error: deleteError } = await supabase
-          .from('user_policy_bookmarks')
-          .delete()
-          .eq('user_id', userId)
-          .eq('bookmark_key', key)
-
-        if (deleteError) throw deleteError
-
-        return { success: true }
-      } catch (err: any) {
-        console.error('DB 북마크 제거 에러:', err.message)
-        return { success: false, error: err.message }
-      }
+    // 로그인한 사용자만 북마크 제거 가능
+    if (!userId) {
+      return { success: false, error: '로그인이 필요합니다.' }
     }
 
-    return { success: true }
+    // DB에서 제거
+    try {
+      const { error: deleteError } = await supabase
+        .from('user_policy_bookmarks')
+        .delete()
+        .eq('user_id', userId)
+        .eq('bookmark_key', key)
+
+      if (deleteError) {
+        console.error('DB 북마크 제거 에러:', deleteError)
+        throw deleteError
+      }
+
+      // 로컬스토리지에서도 제거
+      const bookmarks = getLocalBookmarks()
+      bookmarks.delete(key)
+      saveLocalBookmarks(bookmarks)
+
+      return { success: true }
+    } catch (err: any) {
+      console.error('DB 북마크 제거 에러:', err.message || err)
+      return { success: false, error: err.message || '북마크 제거에 실패했습니다.' }
+    }
   }
 
   // 북마크 여부 확인
